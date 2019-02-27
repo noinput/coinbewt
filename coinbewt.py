@@ -44,7 +44,11 @@ class CoinBewt():
 
 			while b'\r\n' in buff:
 				line, buff = buff.split(b'\r\n', 1)
-				line = line.decode('utf-8')
+
+				try:
+					line = line.decode('utf-8')
+				except UnicodeDecodeError:
+					line = line.decode('iso-8859-1')
 
 				print(f'<== {line}')
 
