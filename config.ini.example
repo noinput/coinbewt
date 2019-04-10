@@ -1,0 +1,9 @@
+[coinBewt]
+server=chat.freenode.net
+port=7000
+use_ssl=True
+nickname=coinBewt
+user=coinBewt
+realname=voted hottest and most likely to succeed 2019
+channels=#coinBewt #crypto
+cmd_prefix=?
