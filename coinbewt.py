@@ -9,11 +9,12 @@ import threading
 
 class CoinBewt():
 
-	def __init__(self, server, port, use_ssl, cmd_prefix, nickname, user, realname, channels):
+	def __init__(self, server, port, use_ssl, cmd_prefix, nickname, altnickname, user, realname, channels):
 		self.server = server
 		self.port = port
 		self.use_ssl = True if use_ssl == 'True' else False
 		self.nickname = nickname
+		self.altnickname = altnickname
 		self.user = user
 		self.realname = realname
 		self.channels = channels
@@ -21,6 +22,8 @@ class CoinBewt():
 		self.symbolDict = {}
 		self.coinnameDict = {}
 		self.cmd_prefix = f':{cmd_prefix}'
+
+		self.lastrecv = int(time.time())
 
 		t = threading.Thread(target=self._create_coin_db, daemon=True).start()
 
@@ -37,19 +40,28 @@ class CoinBewt():
 			self._send(f'NICK {self.nickname}')
 			self._send(f'USER {self.user} 0 * :{self.realname}')
 
+			t = threading.Thread(target=self._check_lastrecv, daemon=True).start()
+	
+	def die(self):
+		if self.socket:
+			self._send('QUIT :ded.')
+			self.socket.shutdown(2)
+			self.socket.close()
+			self.socket = None
+
 	def main(self):
 		buff = b''
+		
 		while True:
-			buff += self.socket.recv(1024)
-			
-			if not buff:
-				print('socket is dead - reconnecting in 120 seconds..')
-				time.sleep(120)
-				self.connect()
+
+			recv = self.socket.recv(1024)
+			buff += recv
 
 			while b'\r\n' in buff:
 				line, buff = buff.split(b'\r\n', 1)
-
+				
+				self.lastrecv = int(time.time())
+				
 				try:
 					line = line.decode('utf-8')
 				except UnicodeDecodeError:
@@ -65,6 +77,9 @@ class CoinBewt():
 				if split[1] == '376' or split[1] == '422':
 					for c in self.channels:
 						self._send(f'JOIN {c}')
+				
+				if split[1] == '433':
+					self._send(f'NICK {self.altnickname}')
 
 				if split[1] == 'PRIVMSG':
 					if split[2] != self.nickname:
@@ -79,8 +94,22 @@ class CoinBewt():
 				self._send(f'PRIVMSG {target} :{price}')
 
 	def _send(self, data):
-		print(f'==> {data}')
-		self.socket.send(data.encode('utf-8') + b'\r\n')
+		try:
+			self.socket.send(data.encode('utf-8') + b'\r\n')
+			print(f'==> {data}')
+		except (OSError, socket.herror, socket.gaierror) as e:
+			print(f'[FAIL] ==> {data}')
+
+	def _check_lastrecv(self, sleeptime=60):
+		while True:
+			time_ago = int(time.time()) - self.lastrecv
+			if time_ago > 1800:
+				print(f'[!] last recv was {time_ago} seconds ago..')
+				print(f'[!] Reconnecting..')
+				self.die()
+				self.connect()
+
+			time.sleep(sleeptime)
 
 	def _create_coin_db(self, sleeptime=84600):
 		api_resource = 'https://min-api.cryptocompare.com/data/all/coinlist'
@@ -149,8 +178,8 @@ if __name__ == '__main__':
 	cf.read(configfile)
 	coinconfig = {}
 
-	for i, v in cf.items('coinBewt'):
-		coinconfig[i] = v
+	for k, v in cf.items('coinBewt'):
+		coinconfig[k] = v
 
 	bot = CoinBewt(
 		server=coinconfig['server'], 
@@ -158,9 +187,14 @@ if __name__ == '__main__':
 		use_ssl=coinconfig['use_ssl'],
 		cmd_prefix=coinconfig['cmd_prefix'],
 		nickname=coinconfig['nickname'],
+		altnickname=coinconfig['altnickname'],
 		user=coinconfig['user'],
 		realname=coinconfig['realname'],
 		channels=coinconfig['channels'].split())
 
-	bot.connect()
-	bot.main()
+	try:
+		bot.connect()
+		bot.main()
+	except KeyboardInterrupt:
+		bot.die()
+

@@ -12,6 +12,7 @@ server=chat.freenode.net
 port=7000
 use_ssl=True
 nickname=coinBewt
+altnickname=coinBewt__
 user=coinBewt
 realname=voted hottest and most likely to succeed 2019
 channels=#coinBewt #crypto
