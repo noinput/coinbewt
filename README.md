@@ -16,6 +16,7 @@ altnickname=coinBewt__
 user=coinBewt
 realname=voted hottest and most likely to succeed 2019
 channels=#coinBewt #crypto
+quitmsg=ded.
 cmd_prefix=?
 ```
 
