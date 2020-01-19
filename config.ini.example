@@ -9,3 +9,5 @@ realname=voted hottest and most likely to succeed 2020
 quitmsg=ded.
 channels=#coinBewt #crypto
 cmd_prefix=?
+callback=handle_callback
+fiat=USD

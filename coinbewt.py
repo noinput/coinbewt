@@ -1,16 +1,20 @@
 import argparse
 import configparser
 from resources.ircbewt import IrcBewt
-from resources.bewthelper import CoinDB, BtcHalv
+from resources.bewthelper import CoinDB, CoinTop, BtcHalv
 
 
 # callback function
 def handle_callback(target, data):
     if bot.is_connected:
         if data[1] == 'halving':
-            bot.send(f'PRIVMSG {target} :{halv.get_halv()}')
+            bot.send(f'PRIVMSG {target} :{BtcHalv.get_halv()}')
+        
+        elif data[1] == 'top':
+            bot.send(f'PRIVMSG {target} :{CoinTop.get_top()}')        
+        
         else:
-            price = coinDb.get_price(' '.join(data[1:]))
+            price = CoinDb.get_price(' '.join(data[1:]))
             if price:
                 bot.send(f'PRIVMSG {target} :{price}')
 
@@ -41,8 +45,9 @@ if __name__ == '__main__':
         quitmsg=coinconfig['quitmsg'],
         callback=handle_callback)
     
-    coinDb = CoinDB()
-    halv = BtcHalv()
+    CoinDb = CoinDB(fiat=coinconfig['fiat'])
+    CoinTop = CoinTop(fiat=coinconfig['fiat'])
+    BtcHalv = BtcHalv()
 
     try:
         bot.connect()

@@ -41,11 +41,47 @@ class BtcHalv():
             return f"\002Bitcoin Halving\002 is \002{blocks_left}\002 blocks, {days} days, {hours} hours and {minutes} minutes away! (\002{halving_date.strftime('%d.%m.%Y %H:%M')} UTC\002)"
 
 
+class CoinTop():
+    
+    def __init__(self, fiat):
+        self.fiat = fiat
+
+    def get_top(self):
+
+        api_resource = f'https://min-api.cryptocompare.com/data/top/mktcapfull?limit=10&tsym={self.fiat}'
+
+        r = requests.get(api_resource, timeout=5)
+
+        if r.status_code == 200:
+            data = r.json()
+
+            if 'Response' in data and data['Response'] == 'Error':
+                return f"[\002Top List\002] data['message']"
+
+            for i, coin in enumerate(data['Data']):
+                
+                if data['Data'][i]['CoinInfo']['Name'] == 'CRO':
+                    continue
+
+                coin_name = data['Data'][i]['CoinInfo']['Name']
+                coin_price = data['Data'][i]['DISPLAY'][self.fiat]['PRICE'].replace(' ', '')
+                change24h = float(round(data['Data'][i]['RAW'][self.fiat]['CHANGEPCT24HOUR'], 2))
+                change24h = f'\00303+{change24h}%\003' if change24h > 0 else f'\00304{change24h}%\003'
+
+                if i == 0:
+                    output = f'\002{coin_name}\002 {coin_price} ({change24h})'
+                else:
+                    output += f' | \002{coin_name}\002 {coin_price} ({change24h})'
+
+            return output
+
+
 class CoinDB():
     
-    def __init__(self):
+    def __init__(self, fiat):
         self.symbolDict = {}
         self.coinnameDict = {}
+        self.fiat = fiat
         
         t = threading.Thread(target=self._create_coin_db, daemon=True).start()
     
@@ -57,9 +93,8 @@ class CoinDB():
 
             if r.status_code == 200:
                 data = r.json()
-                i = 0
 
-                for entry in data['Data'].items():
+                for i, entry in enumerate(data['Data'].items()):
                     if 'Symbol' in entry[1] and 'CoinName' in entry[1]:
                         symbol = entry[1]['Symbol']
                         coinname = entry[1]['CoinName']
@@ -82,12 +117,12 @@ class CoinDB():
         else:
             return {'symbol': coin, 'name': coin}
 
-    def get_price(self, coin, fiat='USD'):
+    def get_price(self, coin):
         td = self._find_coin(coin)
         symbol = td['symbol']
         name = td['name']
 
-        api_resource = f'https://min-api.cryptocompare.com/data/pricemultifull?fsyms={symbol}&tsyms={fiat},BTC,ETH'
+        api_resource = f'https://min-api.cryptocompare.com/data/pricemultifull?fsyms={symbol}&tsyms={self.fiat},BTC,ETH'
 
         r = requests.get(api_resource, timeout=5)
 
@@ -97,11 +132,11 @@ class CoinDB():
             if 'Response' in data and data['Response'] == 'Error':
                 return f'[\002{coin}\002] no such coin'
 
-            price_fiat = data['DISPLAY'][symbol][fiat]['PRICE'].replace(' ', '')
+            price_fiat = data['DISPLAY'][symbol][self.fiat]['PRICE'].replace(' ', '')
             price_btc = data['DISPLAY'][symbol]['BTC']['PRICE']
             price_eth = data['DISPLAY'][symbol]['ETH']['PRICE']
 
-            change24h = float(round(data['RAW'][symbol][fiat]['CHANGEPCT24HOUR'], 2))
+            change24h = float(round(data['RAW'][symbol][self.fiat]['CHANGEPCT24HOUR'], 2))
             change24h = f'\00303+{change24h}%\003' if change24h > 0 else f'\00304{change24h}%\003'
 
             return f'[\002{symbol}\002] {name} is {price_fiat} ({change24h}) | {price_btc} | {price_eth}'
