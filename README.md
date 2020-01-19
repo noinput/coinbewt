@@ -27,7 +27,7 @@ fiat=USD
 python coinbewt.py [-c configfile - default: config.ini]
 ```
 
-# Commands
+### Commands
 ```
 13:07:58 @noinput: ? bitcoin
 13:07:59 coinBewt: [BTC] Bitcoin is $3,845.30 (+0.82% today) | Ƀ 1.00 | Ξ 27.63
