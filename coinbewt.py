@@ -6,17 +6,16 @@ from resources.bewthelper import CoinDB, CoinTop, BtcHalv
 
 # callback function
 def handle_callback(target, data):
-    if bot.is_connected:
-        if data[1] == 'halving':
-            bot.send(f'PRIVMSG {target} :{BtcHalv.get_halv()}')
-        
-        elif data[1] == 'top':
-            bot.send(f'PRIVMSG {target} :{CoinTop.get_top()}')        
-        
-        else:
-            price = CoinDb.get_price(' '.join(data[1:]))
-            if price:
-                bot.send(f'PRIVMSG {target} :{price}')
+    if data[1] == 'halving':
+        bot.send(f'PRIVMSG {target} :{BtcHalv.get_halv()}')
+    
+    elif data[1] == 'top':
+        bot.send(f'PRIVMSG {target} :{CoinTop.get_top()}')        
+    
+    else:
+        price = CoinDb.get_price(' '.join(data[1:]))
+        if price:
+            bot.send(f'PRIVMSG {target} :{price}')
 
 if __name__ == '__main__':
 
