@@ -53,5 +53,6 @@ if __name__ == '__main__':
         bot.connect()
         bot.main()
     except KeyboardInterrupt:
+        bot.disconnect()
         bot.die()
 

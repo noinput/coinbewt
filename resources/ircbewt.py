@@ -19,10 +19,7 @@ class IrcBewt():
         self.callback = callback
 
         self.cmd_prefix = f':{cmd_prefix}'
-
-        self.is_connected = False
         self.thread_is_started = False
-
         self.lastrecv = int(time.time())
 
     def connect(self):
@@ -41,14 +38,16 @@ class IrcBewt():
             if not self.thread_is_started:
                 t = threading.Thread(target=self._check_lastrecv, daemon=True).start()
                 self.thread_is_started = True
-    
-    def die(self):
+
+    def disconnect(self):
         if self.socket:
             self.send(f'QUIT :{self.quitmsg}')
             self.socket.shutdown(2)
+
+    def die(self):
+        if self.socket:
             self.socket.close()
             self.socket = None
-            self.is_connected = False
 
     def main(self):
         buff = b''
@@ -75,7 +74,6 @@ class IrcBewt():
                     self.send(f"PONG {split[1].split(':')[1]}")
 
                 if split[1] == '376' or split[1] == '422':
-                    self.is_connected = True
                     for c in self.channels:
                         self.send(f'JOIN {c}')
                 
