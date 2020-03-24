@@ -36,7 +36,7 @@ class IrcBewt():
             self.send(f'USER {self.user} 0 * :{self.realname}')
 
             if not self.thread_is_started:
-                t = threading.Thread(target=self._check_lastrecv, daemon=True).start()
+                threading.Thread(target=self._check_lastrecv, daemon=True).start()
                 self.thread_is_started = True
 
     def disconnect(self):
@@ -53,7 +53,6 @@ class IrcBewt():
         buff = b''
         
         while True:
-
             buff += self.socket.recv(1024)
 
             while b'\r\n' in buff:
@@ -84,14 +83,13 @@ class IrcBewt():
                     if split[2] != self.nickname:
                         channel = split[2]
                         if len(split) >= 5 and split[3] == self.cmd_prefix:
-                            t = threading.Thread(target=self.callback, args=(channel, split[3:]), daemon=True).start()
+                            threading.Thread(target=self.callback, args=(channel, split[3:]), daemon=True).start()
 
-    def _check_lastrecv(self, sleeptime=60):
+    def _check_lastrecv(self, sleeptime=1):
         while True:
             time_ago = int(time.time()) - self.lastrecv
-            if time_ago > 1800:
-                print(f'[!] last recv was {time_ago} seconds ago..')
-                print(f'[!] Reconnecting..')
+            if time_ago > 360:
+                print(f'[!] last recv was {time_ago} seconds ago. lets try to reconnect..')
                 self.die()
                 self.connect()
 
@@ -102,4 +100,4 @@ class IrcBewt():
             self.socket.send(data.encode('utf-8') + b'\r\n')
             print(f'==> {data}')
         except (OSError, socket.herror, socket.gaierror) as e:
-            print(f'[FAIL] ==> {data}')
+            print(f'[FAIL] ==> {repr(e)} - {e} - {data}')

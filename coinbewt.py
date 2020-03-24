@@ -1,19 +1,26 @@
 import argparse
 import configparser
 from resources.ircbewt import IrcBewt
-from resources.bewthelper import CoinDB, CoinTop, BtcHalv
-
+from resources.bewthelper import CoinDB, CoinTop, BtcHalv, Corona
 
 # callback function
 def handle_callback(target, data):
     if data[1] == 'halving':
-        bot.send(f'PRIVMSG {target} :{BtcHalv.get_halv()}')
+        bot.send(f'PRIVMSG {target} :{_BtcHalv.get_halv()}')
     
     elif data[1] == 'top':
-        bot.send(f'PRIVMSG {target} :{CoinTop.get_top()}')        
+        bot.send(f'PRIVMSG {target} :{_CoinTop.get_top()}')        
     
+    elif data[1] == 'corona':
+        irc_country = ' '.join(data[2:])
+        corona_stats = _Corona.get_corona_stats_for_country(irc_country)
+        
+        if corona_stats is not False:
+            bot.send(f'PRIVMSG {target} :{corona_stats}')        
+        else:
+            bot.send(f'PRIVMSG {target} :\002[{irc_country}]\002 country not found')   
     else:
-        price = CoinDb.get_price(' '.join(data[1:]))
+        price = _CoinDb.get_price(' '.join(data[1:]))
         if price:
             bot.send(f'PRIVMSG {target} :{price}')
 
@@ -44,9 +51,10 @@ if __name__ == '__main__':
         quitmsg=coinconfig['quitmsg'],
         callback=handle_callback)
     
-    CoinDb = CoinDB(fiat=coinconfig['fiat'])
-    CoinTop = CoinTop(fiat=coinconfig['fiat'])
-    BtcHalv = BtcHalv()
+    _CoinDb = CoinDB(fiat=coinconfig['fiat'])
+    _CoinTop = CoinTop(fiat=coinconfig['fiat'])
+    _BtcHalv = BtcHalv()
+    _Corona = Corona()
 
     try:
         bot.connect()

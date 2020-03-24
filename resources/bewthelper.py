@@ -31,7 +31,6 @@ class BtcHalv():
             days = seconds_left // 86400
             hours = seconds_left // 3600 % 24
             minutes = seconds_left // 60 % 60
-            seconds = seconds_left % 60
 
             dt = datetime.utcnow()
             td = timedelta(seconds=seconds_left)
@@ -58,7 +57,7 @@ class CoinTop():
             if 'Response' in data and data['Response'] == 'Error':
                 return f"[\002Top List\002] data['message']"
 
-            for i, coin in enumerate(data['Data']):
+            for i, _coin in enumerate(data['Data']):
                 
                 if data['Data'][i]['CoinInfo']['Name'] == 'CRO':
                     continue
@@ -83,7 +82,7 @@ class CoinDB():
         self.coinnameDict = {}
         self.fiat = fiat
         
-        t = threading.Thread(target=self._create_coin_db, daemon=True).start()
+        threading.Thread(target=self._create_coin_db, daemon=True).start()
     
     def _create_coin_db(self, sleeptime=84600):
         api_resource = 'https://min-api.cryptocompare.com/data/all/coinlist'
@@ -140,3 +139,40 @@ class CoinDB():
             change24h = f'\00303+{change24h}%\003' if change24h > 0 else f'\00304{change24h}%\003'
 
             return f'[\002{symbol}\002] {name} is {price_fiat} ({change24h}) | {price_btc} | {price_eth}'
+
+
+class Corona():
+    
+    def __init__(self):
+        self.corona_db = {}
+        
+        threading.Thread(target=self._create_corona_db, daemon=True).start()
+    
+    def _create_corona_db(self, sleeptime=360):
+        api_resource = 'https://coronavirus-19-api.herokuapp.com/countries/'
+
+        while True:
+            r = requests.get(api_resource, timeout=20)
+
+            if r.status_code == 200:
+                data = r.json()
+                self.corona_db = data
+
+                print(f'[+] corona db updated - sleeping for {sleeptime} seconds..')
+                time.sleep(sleeptime)
+
+    def get_corona_stats_for_country(self, country):
+        for k in self.corona_db:
+            if k['country'].lower() == country.lower():
+                country             = k['country']
+                cases               = k['cases']
+                todayCases          = k['todayCases']
+                deaths              = k['deaths']
+                todayDeaths         = k['todayDeaths']
+                recovered           = k['recovered']
+                active              = k['active']
+                critical            = k['critical']
+                casesPerOneMillion  = k['casesPerOneMillion']
+                output = f'\002[{country}]\002 {cases} infected ({todayCases} today) with {active} still active. {critical} in critical condition, {deaths} deaths and {recovered} recovered.'
+                return output
+        return False
